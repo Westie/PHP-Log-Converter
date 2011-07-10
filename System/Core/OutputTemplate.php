@@ -146,6 +146,14 @@ abstract class OutputTemplate
 	
 	
 	/**
+	 *	Called when a user sends an action.
+	 */
+	public function userSentAction($pObject)
+	{
+	}
+	
+	
+	/**
 	 *	Called when a user sends an alert.
 	 */
 	public function userSentAlert($pObject)

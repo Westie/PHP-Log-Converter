@@ -31,4 +31,4 @@ Core::incorporateTemplate("Purple");
 Core::incorporateTemplate("stdout");
 
 
-Core::convertLogs("2011-03-05.155850+0000GMT.html", "Purple", "stdout");
+Core::convertLogs("2011-05-02.194443+0100IST.html", "Purple", "stdout");

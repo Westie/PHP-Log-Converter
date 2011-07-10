@@ -42,7 +42,7 @@ class stdoutOutput extends OutputTemplate
 	 */
 	public function sessionEnd()
 	{
-		println(__FUNCTION__."():");
+		print(__FUNCTION__."():".PHP_EOL);
 	}
 	
 	

@@ -65,8 +65,8 @@ class PurpleInput extends InputTemplate
 		
 		$this->aUsers[$aUserData[2]] = (object) array
 		(
-			"nickname" => "<unknown>",
-			"address" => $aUserData[2],
+			"nickname" => "(unknown)",
+			"address" => $aUserData[1],
 			"ownerAccount" => false,
 			"style" => "",
 		);
@@ -82,7 +82,7 @@ class PurpleInput extends InputTemplate
 		$this->sessionBegin($pSession);
 		
 		# Now, parse each line.
-		$sPattern = '/<font (.*?)="(.*?)">(.*?)<br\/>/';
+		$sPattern = '/^<font (.*?)="(.*?)">(.*)(<br\/>|\n<\/b><br\/>)/m';
 		
 		preg_match_all($sPattern, $sString, $aMatches, PREG_SET_ORDER);
 		
@@ -97,10 +97,13 @@ class PurpleInput extends InputTemplate
 				}
 				case "size":
 				{
+					$this->onEvent($aMessage);
 					break;
 				}
 			}
 		}
+		
+		$this->sessionEnd();
 	}
 	
 	
@@ -111,16 +114,49 @@ class PurpleInput extends InputTemplate
 	{		
 		$sComponentPattern = '/^<font size="2">\((.*)\)<\/font> <b>(.*):<\/b><\/font> (.*?)$/';
 		$sStylePattern = "/<span style='(.*?)'>/";
+		$bAction = false;
 		
 		preg_match($sComponentPattern, $aMessage[3], $aMessageComponents);
 		preg_match_all($sStylePattern, $aMessageComponents[3], $aMessageStyle);
 		
-		$iTimestamp = $this->generateMessageTS($aMessageComponents[1]);		
-		$sMessageStyle = implode(" ", $aMessageStyle[1]);
-		$pUser = $this->guessUserObject($aMessageComponents[1]);
-		$sMessageString = strip_tags($aMessageComponents[3]);
+		# Is the user sending an action?
+		if(substr($aMessageComponents[2], 0, 3) == "***")
+		{
+			$bAction = true;
+			$aMessageComponents[2] = substr($aMessageComponents[2], 3);
+		}
 		
+		# Sort the data out.
+		$pUser = $this->guessUserObject($aMessageComponents[2]);			
+		$pUser->style = implode(" ", $aMessageStyle[1]);
 		
+		$iTimestamp = $this->generateMessageTS($aMessageComponents[1]);	
+		$aMessageLines = explode("<br/>", $aMessageComponents[3]);
+		
+		# Cycle through the thankfully combo-lined chats.
+		foreach($aMessageLines as $sMessageLine)
+		{
+			$pMessageObject = (object) array
+			(
+				"string" => strip_tags($sMessageLine),
+				"nickname" => $pUser->nickname,
+				"address" => $pUser->address,
+				"time" => $iTimestamp,
+				"style" => $pUser->style,
+				"action" => $bAction,
+			);
+
+			$this->userSentMessage($pMessageObject);
+		}
+	}
+	
+	
+	/**
+	 *	Deal with parsing the events - well, anything not a message.
+	 */
+	private function onEvent($aMessage)
+	{
+		print_r($aMessage);
 	}
 	
 	
@@ -146,6 +182,8 @@ class PurpleInput extends InputTemplate
 	 *	Because Pidgin lacks the ability to err, do anything useful
 	 *	regarding logs, one has to divide by zero, kill some frogs,
 	 *	that kind of thing. What? It's an appropriate method name!
+	 *	I could use message colour, but that might become out of
+	 *	date...
 	 */
 	private function guessUserObject($sNickname)
 	{
@@ -160,6 +198,15 @@ class PurpleInput extends InputTemplate
 		
 		# Okay, so now we've guessed that this is the other guy.
 		# That's why it's named like that!
+		foreach($this->aUsers as $pUser)
+		{
+			if($pUser->nickname == "(unknown)")
+			{
+				$pUser->nickname = $sNickname;
+				return $pUser;
+			}
+		}
 		
+		return null;
 	}
 }

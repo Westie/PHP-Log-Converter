@@ -262,6 +262,7 @@ class MessengerPlusInput extends InputTemplate
 				"address" => $pUser->address,
 				"time" => $this->iMessageTime,
 				"style" => $pUser->style,
+				"action" => false,
 			);
 			
 			$this->userSentMessage($pMessageObject);
